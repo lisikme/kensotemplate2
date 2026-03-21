@@ -2,10 +2,326 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=https://kenso.ketame.ru">
-    <title>Перенаправление...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Редирект | kenso.ketame.ru</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* убираем выделение текста на кнопках */
+        }
+
+        body {
+            background-color: #010101;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, 'Roboto', monospace;
+            padding: 20px;
+        }
+
+        /* главный контейнер — ровно по центру, без лишних блоков */
+        .redirect-container {
+            width: 100%;
+            max-width: 560px;
+            background: transparent;
+            border-radius: 0;
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        /* текст: цвет #D7FE7B, немного воздуха */
+        .title {
+            color: #D7FE7B;
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 1.2rem;
+            word-break: break-word;
+        }
+
+        .url {
+            color: #D7FE7B;
+            font-size: 1.3rem;
+            font-weight: 500;
+            opacity: 0.85;
+            background: rgba(215, 254, 123, 0.08);
+            display: inline-block;
+            padding: 0.3rem 1rem;
+            border-radius: 48px;
+            margin-bottom: 2rem;
+            font-family: monospace;
+            letter-spacing: 0.3px;
+        }
+
+        /* прогресс-бар: фон черный с легкой границей, заливка #D7FE7B */
+        .progress-wrapper {
+            width: 100%;
+            background: #0a0a0a;
+            border-radius: 100px;
+            height: 6px;
+            margin: 1.5rem 0 2rem 0;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(215,254,123,0.2);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background-color: #D7FE7B;
+            border-radius: 100px;
+            transition: width 0.08s linear;
+            box-shadow: 0 0 4px #D7FE7B;
+        }
+
+        /* таймер текст — тоже в цветовой гамме, мелкий, но читаемый */
+        .timer-text {
+            color: #D7FE7B;
+            font-size: 1rem;
+            font-weight: 450;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* кнопки: фон #0E0E0E, текст #D7FE7B, рамка без лишнего */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            background: #0E0E0E;
+            border: none;
+            padding: 0.85rem 1.8rem;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 56px;
+            color: #D7FE7B;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            letter-spacing: 0.2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+            background: #1a1a1a;
+        }
+
+        .btn-primary {
+            background: #0E0E0E;
+            border: 1px solid rgba(215, 254, 123, 0.4);
+        }
+
+        /* ссылка без подчеркивания для кнопки "перейти сейчас" */
+        .btn-link {
+            text-decoration: none;
+        }
+
+        /* очень легкий акцент при ховере (десктоп) */
+        @media (hover: hover) {
+            .btn:hover {
+                background: #1c1c1c;
+                border-color: #D7FE7B;
+                box-shadow: 0 0 6px rgba(215,254,123,0.3);
+            }
+        }
+
+        /* счетчик секунд внутри кнопки не нужен — он отдельно */
+        .small-note {
+            margin-top: 2rem;
+            font-size: 0.7rem;
+            color: #3a3a3a;
+        }
+    </style>
 </head>
 <body>
-    <p>Перенаправление на <a href="https://kenso.ketame.ru">kenso.ketame.ru</a>...</p>
+
+<div class="redirect-container">
+    <!-- главный текст: цвет #D7FE7B -->
+    <div class="title">перенаправление</div>
+    <div class="url">kenso.ketame.ru</div>
+
+    <!-- прогресс бар на 3 секунды -->
+    <div class="progress-wrapper">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- индикатор оставшихся секунд -->
+    <div class="timer-text" id="timerDisplay">осталось 3 сек</div>
+
+    <!-- кнопки: фон #0E0E0E, текст #D7FE7B -->
+    <div class="button-group">
+        <!-- переход сразу: отменяет таймер и делает редирект немедленно -->
+        <button class="btn btn-primary" id="instantRedirectBtn">➡️ перейти сейчас</button>
+        <!-- отмена редиректа (остаться) но по условию "сайт без воды" — кнопка нужна для удобства,
+             но не нарушает стиль. если пользователь захочет остаться, редирект отменяется -->
+        <button class="btn" id="cancelRedirectBtn">✖️ отменить</button>
+    </div>
+    <div class="small-note"></div>
+</div>
+
+<script>
+    (function() {
+        // ЦЕЛЕВОЙ URL — сразу на kenso.ketame.ru (без задержки лишней, но с протоколом https? 
+        // Добавим https:// для корректного перехода, но если вдруг http, браузер сам допишет. 
+        // Чтобы редирект точно сработал, используем полный URL.
+        const TARGET_URL = "https://kenso.ketame.ru";
+        // Резервный вариант на случай, если домен без https — но пусть будет так. 
+        // По заданию: "редирект сразу на kenso.ketame.ru"
+
+        let countdown = 3;          // 3 секунды
+        let redirectTimer = null;   // таймер для редиректа
+        let progressInterval = null; // интервал обновления прогресс-бара и текста
+        let redirectCancelled = false;
+
+        // DOM элементы
+        const progressFillEl = document.getElementById('progressFill');
+        const timerDisplayEl = document.getElementById('timerDisplay');
+        const instantBtn = document.getElementById('instantRedirectBtn');
+        const cancelBtn = document.getElementById('cancelRedirectBtn');
+
+        // Функция для выполнения редиректа (с проверкой, не отменён ли)
+        function performRedirect() {
+            if (redirectCancelled) return;
+            // очищаем все активные таймеры, чтобы избежать повторного вызова
+            if (redirectTimer) clearTimeout(redirectTimer);
+            if (progressInterval) clearInterval(progressInterval);
+            window.location.href = TARGET_URL;
+        }
+
+        // Функция обновления прогресс-бара и текста
+        function updateProgressAndTimer() {
+            if (redirectCancelled) return;
+            // countdown может быть дробным, но у нас целые секунды от 3 до 0.
+            // Прогресс: (3 - countdown) / 3 * 100% — заполнение
+            let elapsed = 3 - countdown;
+            let percent = (elapsed / 3) * 100;
+            percent = Math.min(100, Math.max(0, percent));
+            progressFillEl.style.width = percent + "%";
+
+            // Отображение оставшихся секунд
+            let secondsLeft = countdown;
+            if (secondsLeft <= 0) {
+                timerDisplayEl.innerText = "редирект...";
+            } else {
+                let wordForm = (secondsLeft === 1) ? "секунда" : (secondsLeft >= 2 && secondsLeft <= 4) ? "секунды" : "секунд";
+                timerDisplayEl.innerText = `осталось ${secondsLeft} ${wordForm}`;
+            }
+        }
+
+        // Функция, которая уменьшает countdown каждую секунду
+        function startCountdown() {
+            if (redirectCancelled) return;
+            
+            // начальное обновление UI (прогресс 0%)
+            updateProgressAndTimer();
+            
+            // основной интервал: каждую секунду обновляем countdown
+            progressInterval = setInterval(() => {
+                if (redirectCancelled) {
+                    // если редирект отменён, чистим интервал
+                    if (progressInterval) clearInterval(progressInterval);
+                    return;
+                }
+                
+                if (countdown <= 1) {
+                    // последний тик: редирект
+                    if (countdown === 1) {
+                        countdown = 0;
+                        updateProgressAndTimer(); // обновить бар на 100% и текст
+                    }
+                    // останавливаем интервал
+                    if (progressInterval) clearInterval(progressInterval);
+                    // запускаем редирект через микро-задержку, чтобы успел отрисоваться 100% бар
+                    if (redirectTimer) clearTimeout(redirectTimer);
+                    redirectTimer = setTimeout(() => {
+                        performRedirect();
+                    }, 30);
+                } else {
+                    countdown--;
+                    updateProgressAndTimer();
+                }
+            }, 1000);
+        }
+
+        // Функция отмены редиректа (кнопка "отменить")
+        function cancelRedirect() {
+            if (redirectCancelled) return;
+            redirectCancelled = true;
+            
+            // очищаем все таймеры
+            if (redirectTimer) {
+                clearTimeout(redirectTimer);
+                redirectTimer = null;
+            }
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            
+            // меняем состояние UI: блокируем кнопки? нет, но показываем, что редирект отменён
+            timerDisplayEl.innerText = "⛔ редирект отменён";
+            progressFillEl.style.width = "0%";
+            progressFillEl.style.backgroundColor = "#4a4a4a"; // тусклый цвет чтобы показать остановку
+            
+            // Делаем кнопки менее активными визуально, но они всё ещё могут нажать "перейти сейчас"
+            instantBtn.disabled = false; // оставляем возможность перейти вручную
+            cancelBtn.disabled = true;
+            cancelBtn.style.opacity = "0.6";
+            cancelBtn.style.cursor = "default";
+            
+            // Также по желанию можно сменить текст кнопки "отменить" на "отменено"
+            cancelBtn.innerText = "✖️ отменено";
+        }
+        
+        // Мгновенный переход: сбрасываем отмену, если была, и сразу редиректим
+        function instantRedirect() {
+            // если редирект уже был отменён, всё равно переходим (поведение: пользователь нажал "перейти сейчас")
+            // очищаем все таймеры, чтобы избежать конфликта
+            if (redirectTimer) clearTimeout(redirectTimer);
+            if (progressInterval) clearInterval(progressInterval);
+            
+            // ставим флаг, что редирект НЕ отменён (если был отменён ранее, разрешаем переход)
+            redirectCancelled = false;
+            
+            // делаем мгновенный переход на целевой URL
+            window.location.href = TARGET_URL;
+        }
+        
+        // Добавляем обработчики кнопок
+        instantBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            instantRedirect();
+        });
+        
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (redirectCancelled) return; // уже отменено
+            cancelRedirect();
+        });
+        
+        // Инициализация: начинаем обратный отсчёт, только если нет отмены
+        startCountdown();
+        
+        // Дополнительная защита: если пользователь нажал "назад" в браузере, редирект не должен висеть
+        // но это стандартное поведение, оставляем как есть.
+        // Также при выгрузке страницы ничего не делаем, но редирект сам сработает.
+        
+        // Небольшая эстетика: если пользователь попытается уйти со страницы вручную во время отсчета — 
+        // не мешаем. По заданию "просто й сайт без воды" — всё прозрачно.
+    })();
+</script>
 </body>
 </html>
